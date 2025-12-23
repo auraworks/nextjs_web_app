@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
+import { useProfile, useUpdateProfile } from '@/components/hooks/users';
 
 interface FormErrors {
   name?: string;
@@ -12,48 +12,28 @@ interface FormErrors {
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const [email, setEmail] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { data, isLoading } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
+
+  const profile = data?.profile;
+  const email = data?.user?.email || '';
+
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isInitialized, setIsInitialized] = useState(false);
   const [editForm, setEditForm] = useState<{ name: string; phone: string; birthdate: string }>({
     name: '',
     phone: '',
     birthdate: '',
   });
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.replace('/login');
-        return;
-      }
-
-      setEmail(user.email || '');
-      
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileData) {
-        setEditForm({
-          name: profileData.name || '',
-          phone: profileData.phone || '',
-          birthdate: profileData.birthdate || '',
-        });
-      }
-      
-      setLoading(false);
-    };
-
-    fetchProfile();
-  }, [router]);
+  if (profile && !isInitialized) {
+    setEditForm({
+      name: profile.name || '',
+      phone: profile.phone || '',
+      birthdate: profile.birthdate || '',
+    });
+    setIsInitialized(true);
+  }
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -76,37 +56,31 @@ export default function EditProfilePage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleUpdateProfile = async () => {
+  const handleUpdateProfile = () => {
     if (!validateForm()) {
       return;
     }
     
-    setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: editForm.name,
-          phone: editForm.phone,
-          birthdate: editForm.birthdate || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (!error) {
-        alert('회원정보가 수정되었습니다.');
-        router.back();
-      } else {
-        alert('회원정보 수정에 실패했습니다.');
+    updateProfileMutation.mutate(
+      {
+        name: editForm.name,
+        phone: editForm.phone,
+        birthdate: editForm.birthdate || null,
+      },
+      {
+        onSuccess: (success) => {
+          if (success) {
+            alert('회원정보가 수정되었습니다.');
+            router.back();
+          } else {
+            alert('회원정보 수정에 실패했습니다.');
+          }
+        },
       }
-    }
-    setSaving(false);
+    );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <span>로딩 중...</span>
@@ -208,10 +182,10 @@ export default function EditProfilePage() {
         </button>
         <button
           onClick={handleUpdateProfile}
-          disabled={saving}
+          disabled={updateProfileMutation.isPending}
           className="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300"
         >
-          {saving ? '저장 중...' : '저장'}
+          {updateProfileMutation.isPending ? '저장 중...' : '저장'}
         </button>
       </div>
     </div>

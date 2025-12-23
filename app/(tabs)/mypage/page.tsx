@@ -1,68 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
-import { Profile } from '../../../types/mypage';
+import { useProfile, useSignOut, useDeleteProfile } from '@/components/hooks/users';
 
 export default function Mypage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [email, setEmail] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useProfile();
+  const signOutMutation = useSignOut();
+  const deleteProfileMutation = useDeleteProfile();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        setEmail(user.email || '');
-        
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileData) {
-          setProfile(profileData);
-        }
-      }
-      
-      setLoading(false);
-    };
+  const profile = data?.profile;
+  const email = data?.user?.email;
 
-    fetchProfile();
-  }, []);
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    localStorage.clear();
-    window.location.href = '/';
+  const handleLogout = () => {
+    signOutMutation.mutate(undefined, {
+      onSuccess: () => {
+        window.location.href = '/';
+      },
+    });
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     if (!confirm('정말로 회원탈퇴 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
       return;
     }
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      await supabase.from('profiles').delete().eq('id', user.id);
-      await supabase.auth.signOut();
-      localStorage.clear();
-      
-      alert('회원탈퇴가 완료되었습니다.');
-      window.location.href = '/login';
-    }
+    deleteProfileMutation.mutate(undefined, {
+      onSuccess: () => {
+        signOutMutation.mutate(undefined, {
+          onSuccess: () => {
+            alert('회원탈퇴가 완료되었습니다.');
+            window.location.href = '/login';
+          },
+        });
+      },
+    });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-10">
         <span>로딩 중...</span>
