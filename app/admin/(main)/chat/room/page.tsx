@@ -43,7 +43,11 @@ export default function AdminChatRoom({ roomId }: AdminChatRoomProps) {
       await updateStatus.mutateAsync({ roomId, status: 'active' });
     }
 
-    await sendMessage.mutateAsync({ roomId, content: message.trim() });
+    await sendMessage.mutateAsync({ 
+      roomId, 
+      content: message.trim(),
+      senderId: currentUserId || undefined,
+    });
     setMessage('');
   };
 

@@ -70,15 +70,33 @@ export const chatApis = {
   getAllRooms: async (): Promise<ChatRoomWithUser[]> => {
     const supabase = createClient();
 
-    const { data } = await supabase
+    // 채팅방 조회
+    const { data: rooms } = await supabase
       .from('chat_rooms')
-      .select(`
-        *,
-        profiles:user_id (name, email)
-      `)
+      .select('*')
       .order('updated_at', { ascending: false });
 
-    return data || [];
+    if (!rooms || rooms.length === 0) {
+      return [];
+    }
+
+    // 각 채팅방의 사용자 프로필 조회
+    const roomsWithProfiles = await Promise.all(
+      rooms.map(async (room) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', room.user_id)
+          .single();
+
+        return {
+          ...room,
+          profiles: profile || { name: '알 수 없음', email: '' },
+        };
+      })
+    );
+
+    return roomsWithProfiles;
   },
 
   /**

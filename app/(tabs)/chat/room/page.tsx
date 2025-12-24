@@ -32,7 +32,11 @@ export default function ChatRoom() {
     e.preventDefault();
     if (!message.trim() || !room?.id) return;
 
-    await sendMessage.mutateAsync({ roomId: room.id, content: message.trim() });
+    await sendMessage.mutateAsync({ 
+      roomId: room.id, 
+      content: message.trim(),
+      senderId: currentUserId || undefined,
+    });
     setMessage('');
   };
 

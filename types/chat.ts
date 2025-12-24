@@ -29,6 +29,7 @@ export interface ChatMessage {
 export interface SendMessageParams {
   roomId: string;
   content: string;
+  senderId?: string;
 }
 
 /** Broadcast 메시지 페이로드 */
