@@ -1,9 +1,13 @@
+/** 사용자 역할 타입 */
+export type UserRole = 'admin' | 'user';
+
 export interface Profile {
   id: string;
   name?: string;
   phone?: string;
   birthdate?: string;
   email?: string;
+  role: UserRole;
   created_at: string;
   updated_at: string;
 }

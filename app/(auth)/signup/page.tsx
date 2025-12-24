@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/client';
-import { FormData, FormErrors, FormSuccess } from '@/types/author';
+import { FormData, FormErrors, FormSuccess } from '@/types/auth';
 
 function SignupPageInner() {
   const router = useRouter();
