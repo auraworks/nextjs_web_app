@@ -18,7 +18,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
   ];
 
   return (
-    <div className="bg-white border-t border-gray-200 pb-safe-bottom">
+    <div className="bg-white border-t border-gray-200">
       <div className="flex">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -113,7 +113,9 @@ export default function TabsLayout({
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {children}
       </div>
-      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
+      <div className="safe-area-bottom">
+        <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
+      </div>
     </div>
   );
 }

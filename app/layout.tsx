@@ -26,10 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black safe-area-body`}>
         <QueryProvider>
           <div className="flex justify-center h-screen">
-            <div className="w-full max-w-md bg-white shadow-lg h-screen overflow-hidden flex flex-col">
+            <div className="w-full max-w-md bg-white shadow-lg h-screen overflow-hidden flex flex-col safe-area-container">
               {children}
             </div>
           </div>
