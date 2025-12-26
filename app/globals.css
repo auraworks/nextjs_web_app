@@ -10,8 +10,12 @@
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
 }
 
-body {
+/* 터치 동작 개선(줌 인/아웃 방지) */
+* {
   touch-action: pan-x pan-y;
+}
+
+body {
   background-color: rgb(229 231 235);
 }
 
