@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/client';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { userKeys } from './keys';
 import { UpdateProfileParams } from '@/types/mypage';
 
@@ -33,6 +34,8 @@ const updateProfile = async (params: UpdateProfileParams): Promise<boolean> => {
 
 /**
  * 프로필 삭제 (회원탈퇴)
+ * 1. profiles 테이블에서 사용자 정보 삭제
+ * 2. auth.users에서 사용자 삭제 (service_role 키 사용)
  * @returns 성공 여부
  */
 const deleteProfile = async (): Promise<boolean> => {
@@ -43,22 +46,29 @@ const deleteProfile = async (): Promise<boolean> => {
     return false;
   }
 
-  const { error } = await supabase
+  // 1. profiles 테이블에서 사용자 정보 삭제
+  const { error: profileError } = await supabase
     .from('profiles')
     .delete()
     .eq('id', user.id);
 
-  return !error;
-};
+  if (profileError) {
+    return false;
+  }
 
-/**
- * 로그아웃 처리
- * Supabase 세션 종료 및 localStorage 초기화
- */
-const signOut = async (): Promise<void> => {
-  const supabase = createClient();
-  await supabase.auth.signOut();
-  localStorage.clear();
+  // 2. service_role 키를 사용한 Admin 클라이언트로 auth.users에서 사용자 삭제
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || ''
+  );
+
+  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+
+  if (authError) {
+    return false;
+  }
+
+  return true;
 };
 
 /**
@@ -114,3 +124,14 @@ export const useSignOut = () => {
     },
   });
 };
+
+/**
+ * 로그아웃 처리
+ * Supabase 세션 종료 및 localStorage 초기화
+ */
+const signOut = async (): Promise<void> => {
+  const supabase = createClient();
+  await supabase.auth.signOut();
+  localStorage.clear();
+};
+

@@ -11,11 +11,22 @@ const saveMessageToDB = async (
   userId: string
 ): Promise<void> => {
   try {
+    // 채팅방 정보 조회 (수신자 ID 가져오기)
+    const { data: room } = await supabase
+      .from('chat_rooms')
+      .select('user1_id, user2_id')
+      .eq('id', params.roomId)
+      .single();
+
+    // 송신자가 user1이면 user2가 수신자, 반대면 user1이 수신자
+    const receiverId = room?.user1_id === userId ? room?.user2_id : room?.user1_id;
+
     await supabase
       .from('chat_messages')
       .insert({
         room_id: params.roomId,
         sender_id: userId,
+        receiver_id: receiverId || null,
         content: params.content,
       });
 
@@ -46,22 +57,30 @@ export const chatApis = {
     const { data: existingRoom } = await supabase
       .from('chat_rooms')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user1_id', user.id)
       .neq('status', 'closed')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (existingRoom) return existingRoom;
 
-    // 없으면 새로 생성
-    const { data: newRoom } = await supabase
-      .from('chat_rooms')
-      .insert({ user_id: user.id })
-      .select()
-      .single();
+    // 첫 번째 관리자 조회
+    const { data: adminUsers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+      .limit(1);
 
-    return newRoom;
+    const adminId = adminUsers?.[0]?.id;
+
+    // 없으면 새로 생성
+    const { data: newRooms } = await supabase
+      .from('chat_rooms')
+      .insert({ user1_id: user.id, user2_id: adminId || null })
+      .select();
+
+    return newRooms?.[0] || null;
   },
 
   /**
@@ -86,7 +105,7 @@ export const chatApis = {
         const { data: profile } = await supabase
           .from('profiles')
           .select('name, email')
-          .eq('id', room.user_id)
+          .eq('id', room.user1_id)
           .single();
 
         return {
