@@ -18,7 +18,7 @@ function TabBar({ activeTab, onTabChange }: TabBarProps) {
   ];
 
   return (
-    <div className="bg-white border-t border-gray-200">
+    <div className="bg-white border-t border-gray-200 pb-safe-bottom">
       <div className="flex">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
