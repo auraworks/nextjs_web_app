@@ -127,7 +127,7 @@ export const useSignOut = () => {
 
 /**
  * 로그아웃 처리
- * Supabase 세션 종료 및 localStorage 초기화
+ * Supabase 세션 종료 및 localStorage 초기화 (push_token 제외)
  * push_tokens 테이블의 user_id를 NULL로 업데이트
  */
 const signOut = async (): Promise<void> => {
@@ -142,6 +142,9 @@ const signOut = async (): Promise<void> => {
   }
 
   await supabase.auth.signOut();
-  localStorage.clear();
+  
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user_email');
+  localStorage.removeItem('isLoggedIn');
 };
 

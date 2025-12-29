@@ -68,7 +68,10 @@ export const adminApis = {
     }
 
     await supabase.auth.signOut();
-    localStorage.clear();
+    
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('isLoggedIn');
   },
 
   /**
