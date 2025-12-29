@@ -128,9 +128,19 @@ export const useSignOut = () => {
 /**
  * 로그아웃 처리
  * Supabase 세션 종료 및 localStorage 초기화
+ * push_tokens 테이블의 user_id를 NULL로 업데이트
  */
 const signOut = async (): Promise<void> => {
   const supabase = createClient();
+  const token = localStorage.getItem('push_token');
+
+  if (token) {
+    await supabase
+      .from('push_tokens')
+      .update({ user_id: null })
+      .eq('token', token);
+  }
+
   await supabase.auth.signOut();
   localStorage.clear();
 };

@@ -33,9 +33,19 @@ export const adminApis = {
         return { success: false, error: '관리자 권한이 없습니다.' };
       }
 
-      localStorage.setItem('user_id', data.session.user.id);
+      const userId = data.session.user.id;
+      const token = localStorage.getItem('push_token');
+
+      localStorage.setItem('user_id', userId);
       localStorage.setItem('user_email', data.session.user.email || '');
       localStorage.setItem('isLoggedIn', 'true');
+
+      if (token) {
+        await supabase
+          .from('push_tokens')
+          .update({ user_id: userId })
+          .eq('token', token);
+      }
 
       return { success: true };
     }
@@ -48,6 +58,15 @@ export const adminApis = {
    */
   logout: async (): Promise<void> => {
     const supabase = createClient();
+    const token = localStorage.getItem('push_token');
+
+    if (token) {
+      await supabase
+        .from('push_tokens')
+        .update({ user_id: null })
+        .eq('token', token);
+    }
+
     await supabase.auth.signOut();
     localStorage.clear();
   },

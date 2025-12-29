@@ -73,11 +73,20 @@ function LoginPageInner() {
     }
 
     if (data.session) {
-      localStorage.setItem('user_id', data.session.user.id);
+      const userId = data.session.user.id;
+      const token = localStorage.getItem('push_token');
+
+      localStorage.setItem('user_id', userId);
       localStorage.setItem('user_email', data.session.user.email || '');
       localStorage.setItem('isLoggedIn', 'true');
+
+      if (token) {
+        await supabase
+          .from('push_tokens')
+          .update({ user_id: userId })
+          .eq('token', token);
+      }
       
-      // 쿠키가 설정될 시간을 주고 이동
       setTimeout(() => {
         window.location.href = '/home';
       }, 100);
