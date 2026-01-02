@@ -5,8 +5,11 @@ import { usePathname } from 'next/navigation';
 
 const sidebarMenus = [
   { name: '대시보드', href: '/admin/dashboard' },
-  { name: '사용자 관리', href: '/admin/users' },
+  { name: '회원 관리', href: '/admin/members' },
   { name: '문의 관리', href: '/admin/chat' },
+  { name: '상품 관리', href: '/admin/products' },
+  { name: '리뷰 관리', href: '/admin/reviews' },
+  { name: '주문 관리', href: '/admin/orders' },
 ];
 
 export default function AdminSidebar() {
@@ -25,7 +28,7 @@ export default function AdminSidebar() {
                 href={menu.href}
                 className={`block px-4 py-2 rounded-lg transition-colors ${
                   pathname === menu.href
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-500 text-white'
                     : 'hover:bg-gray-700'
                 }`}
               >
