@@ -1,27 +1,17 @@
 'use client';
 
-import { createClient } from '@/lib/client';
+import { useAuth } from '@/components/hooks/useAuth';
 
 interface KakaoLoginProps {
   onClick?: () => void;
 }
 
 export default function KakaoLogin({ onClick }: KakaoLoginProps) {
-  const handleKakaoLogin = async () => {
-    const supabase = createClient();
-    
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'kakao',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth`,
-      },
-    });
+  const { signInWithKakao } = useAuth();
 
-    if (error) {
-      console.error('Kakao 로그인 에러:', error);
-    } else {
-      onClick?.();
-    }
+  const handleKakaoLogin = async () => {
+    await signInWithKakao();
+    onClick?.();
   };
 
   return (

@@ -1,58 +1,111 @@
-import { createClient } from '@/lib/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/client';
+import { useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
-  
-  // 보안: 허용된 경로 목록
-  const allowedPaths = ['/', '/mypage', '/mypage/edit'];
-  const safeNext = allowedPaths.includes(next) ? next : '/';
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  if (code) {
-    const supabase = await createClient();
-    
-    try {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      
-      if (!error) {
-        // 사용자 정보 가져오기
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          // 프로필 정보 확인 및 저장
+  useEffect(() => {
+    // 초기 사용자 정보 가져오기
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+
+    getUser();
+
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+
+        // 최초 로그인 시 프로필 생성 (기본 로그인만 처리)
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('Login event triggered:', event);
           const { data: existingProfile } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', user.id)
+            .eq('id', session.user.id)
             .single();
-          
+
           if (!existingProfile) {
-            // 새 프로필 생성
-            const { error: profileError } = await supabase
+            await supabase
               .from('profiles')
               .insert({
-                id: user.id,
-                email: user.email,
-                name: user.user_metadata?.full_name || user.user_metadata?.name,
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
                 created_at: new Date().toISOString(),
               });
+          }
+          
+          // 로컬 스토리지에 사용자 정보 저장
+          if (typeof window !== 'undefined') {
+            console.log('Saving to localStorage and redirecting');
+            localStorage.setItem('user_id', session.user.id);
+            localStorage.setItem('user_email', session.user.email || '');
+            localStorage.setItem('isLoggedIn', 'true');
             
-            if (profileError) {
-              // 프로필 생성 에러 시 조용히 처리
-              return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('프로필 생성에 실패했습니다.')}`);
-            }
+            // 로그인 성공 후 홈화면으로 이동
+            setTimeout(() => {
+              console.log('Redirecting to /home');
+              window.location.href = '/home';
+            }, 100);
           }
         }
-        
-        return NextResponse.redirect(`${origin}${safeNext}`);
       }
-    } catch {
-      // 에러 조용히 처리
-    }
-  }
+    );
 
-  // 에러 시 로그인 페이지로 리디렉션
-  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('로그인에 실패했습니다.')}`);
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  const signInWithKakao = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      console.error('Kakao 로그인 에러:', error);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      console.error('Google 로그인 에러:', error);
+    }
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('로그아웃 에러:', error);
+    } else {
+      // 로그아웃 시 로컬 스토리지 정리
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user');
+      }
+    }
+  };
+
+  return {
+    user,
+    loading,
+    signInWithKakao,
+    signInWithGoogle,
+    signOut,
+  };
 }
