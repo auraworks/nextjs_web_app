@@ -1,27 +1,17 @@
 'use client';
 
-import { createClient } from '@/lib/client';
+import { useAuth } from '@/components/hooks/useAuth';
 
 interface GoogleLoginProps {
   onClick?: () => void;
 }
 
 export default function GoogleLogin({ onClick }: GoogleLoginProps) {
-  const handleGoogleLogin = async () => {
-    const supabase = createClient();
-    
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth`,
-      },
-    });
+  const { signInWithGoogle } = useAuth();
 
-    if (error) {
-      console.error('Google 로그인 에러:', error);
-    } else {
-      onClick?.();
-    }
+  const handleGoogleLogin = async () => {
+    await signInWithGoogle();
+    onClick?.();
   };
 
   return (
